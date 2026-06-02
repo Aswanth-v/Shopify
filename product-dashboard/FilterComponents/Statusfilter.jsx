@@ -28,31 +28,24 @@ export function ProductFilters({
   );
 }
 
-export  function SearchFilters({
+export function SearchFilters({
   search,
   setSearch,
-  status,
-  setStatus,
 }) {
   return (
-    <>
+    <div style={{ marginBottom: 12 }}>
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search products..."
+        placeholder="Search products by name..."
+        style={{
+          padding: "8px 10px",
+          border: "1px solid #ccc",
+          borderRadius: 6,
+          width: "100%",
+          maxWidth: 300,
+        }}
       />
-
-      {["All", "Active", "Draft", "Archived"].map((s) => (
-        <button
-          key={s}
-          onClick={() => setStatus(s)}
-          style={{
-            fontWeight: status === s ? "bold" : "normal",
-          }}
-        >
-          {s}
-        </button>
-      ))}
-    </>
+    </div>
   );
 }

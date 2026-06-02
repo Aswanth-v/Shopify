@@ -34,13 +34,23 @@ const [status, setStatus] = useState("All");
   );
 
   // filter logic (kept here intentionally — "brain layer")
-  const filteredProducts = useMemo(() => {
-    if (selectedStatus === "All") return formattedProducts;
+const filteredProducts = useMemo(() => {
+  let data = formattedProducts;
 
-    return formattedProducts.filter(
-      (p) => p.status === selectedStatus
+  // 1. status filter (your FIRST filter)
+  if (selectedStatus !== "All") {
+    data = data.filter((p) => p.status === selectedStatus);
+  }
+
+  // 2. search filter (product title search)
+  if (search.trim()) {
+    data = data.filter((p) =>
+      p.title.toLowerCase().includes(search.toLowerCase())
     );
-  }, [formattedProducts, selectedStatus]);
+  }
+
+  return data;
+}, [formattedProducts, selectedStatus, search]);
 
   return (
     <Card>
@@ -52,8 +62,8 @@ const [status, setStatus] = useState("All");
       <SearchFilters
   search={search}
   setSearch={setSearch}
-  status={status}
-  setStatus={setStatus}
+  //status={status}
+ // setStatus={setStatus}
 />
 
 
