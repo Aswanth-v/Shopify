@@ -22,8 +22,9 @@ export default function ProductTable({
         itemCount={products.length}
         selectable={false}
         headings={[
+        //  { title: "image" },
           { title: "Product" },
-          { title: "image" },
+          { title: "Status" },
           { title: "Category" },
           { title: "Price" },
         ]}
@@ -48,7 +49,7 @@ export default function ProductTable({
             </IndexTable.Cell>
 
             <IndexTable.Cell>
-              {product.category}
+              {product.status}
             </IndexTable.Cell>
 
             <IndexTable.Cell>
