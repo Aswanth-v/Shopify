@@ -55,7 +55,6 @@ export default function ProductTable({ products, onSelect }: Props) {
       />
       <SearchFilters search={search} setSearch={setSearch} />
 
-      {/* ===================== DESKTOP TABLE ===================== */}
       <div className="hidden md:block">
         <IndexTable
           resourceName={{ singular: "product", plural: "products" }}
@@ -93,7 +92,7 @@ export default function ProductTable({ products, onSelect }: Props) {
               <IndexTable.Cell>
                 <div className="font-medium">
                   {product.title.length > 40
-                    ? `${product.title.slice(0, 40)}...`
+                    ? `${product.title.slice(0, 10)}...`
                     : product.title}
                 </div>
               </IndexTable.Cell>
@@ -122,7 +121,7 @@ export default function ProductTable({ products, onSelect }: Props) {
         </IndexTable>
       </div>
 
-      {/* ===================== MOBILE CARD VIEW ===================== */}
+      {/*  MOBILE CARD VIEW  */}
       <div className="md:hidden space-y-3 mt-3">
         {filteredProducts.map((product) => (
           <div

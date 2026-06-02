@@ -1,25 +1,20 @@
 "use client";
 
-export function ProductFilters({
-  selectedStatus,
-  setSelectedStatus,
-}) {
+export function ProductFilters({ selectedStatus, setSelectedStatus }) {
   const statuses = ["All", "Active", "Draft", "Archived"];
 
   return (
-    <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+    <div className="flex gap-2.5 mb-3">
       {statuses.map((status) => (
         <button
           key={status}
           onClick={() => setSelectedStatus(status)}
-          style={{
-            padding: "6px 12px",
-            borderRadius: 6,
-            border: "1px solid #ccc",
-            background: selectedStatus === status ? "#111" : "#fff",
-            color: selectedStatus === status ? "#fff" : "#000",
-            cursor: "pointer",
-          }}
+          className={`px-3 py-1.5 rounded-md border transition-colors cursor-pointer
+            ${
+              selectedStatus === status
+                ? "bg-black text-white border-black"
+                : "bg-white text-black border-gray-300 hover:bg-gray-100"
+            }`}
         >
           {status}
         </button>
@@ -28,23 +23,14 @@ export function ProductFilters({
   );
 }
 
-export function SearchFilters({
-  search,
-  setSearch,
-}) {
+export function SearchFilters({ search, setSearch }) {
   return (
-    <div style={{ marginBottom: 12 }}>
+    <div className="mb-3">
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search products by name..."
-        style={{
-          padding: "8px 10px",
-          border: "1px solid #ccc",
-          borderRadius: 6,
-          width: "100%",
-          maxWidth: 300,
-        }}
+        className="px-2.5 py-2 border border-gray-300 rounded-md w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-black/20"
       />
     </div>
   );
