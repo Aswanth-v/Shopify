@@ -1,6 +1,6 @@
 "use client";
 
-export default function ProductFilters({
+export function ProductFilters({
   selectedStatus,
   setSelectedStatus,
 }) {
@@ -25,5 +25,34 @@ export default function ProductFilters({
         </button>
       ))}
     </div>
+  );
+}
+
+export  function SearchFilters({
+  search,
+  setSearch,
+  status,
+  setStatus,
+}) {
+  return (
+    <>
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search products..."
+      />
+
+      {["All", "Active", "Draft", "Archived"].map((s) => (
+        <button
+          key={s}
+          onClick={() => setStatus(s)}
+          style={{
+            fontWeight: status === s ? "bold" : "normal",
+          }}
+        >
+          {s}
+        </button>
+      ))}
+    </>
   );
 }

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Card, IndexTable } from "@shopify/polaris";
 import type { Product } from "@/types/Product";
-import ProductFilters from "../FilterComponents/Statusfilter";
+import {ProductFilters,SearchFilters} from "../FilterComponents/Statusfilter";
 interface Props {
   products: Product[];
   onSelect: (product: Product) => void;
@@ -15,6 +15,8 @@ const vendors = ["Company 123", "Rustic LTD", "partners-demo", "Boring Rock"];
 export default function ProductTable({ products, onSelect }: Props) {
   const [selectedStatus, setSelectedStatus] = useState("All");
 
+const [search, setSearch] = useState("");
+const [status, setStatus] = useState("All");
   // enrich products
   const formattedProducts = useMemo(
     () =>
@@ -47,6 +49,13 @@ export default function ProductTable({ products, onSelect }: Props) {
         selectedStatus={selectedStatus}
         setSelectedStatus={setSelectedStatus}
       />
+      <SearchFilters
+  search={search}
+  setSearch={setSearch}
+  status={status}
+  setStatus={setStatus}
+/>
+
 
       {/* TABLE */}
       <IndexTable
