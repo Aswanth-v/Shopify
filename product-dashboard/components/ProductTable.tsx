@@ -21,37 +21,55 @@ export default function ProductTable({
         }}
         itemCount={products.length}
         selectable={false}
-        headings={[
-        //  { title: "image" },
-          { title: "Product" },
-          { title: "Status" },
-          { title: "Category" },
-          { title: "Price" },
-        ]}
+       headings={[
+  { title: "Product" },
+  { title: "Status" },
+  { title: "Inventory" },
+  { title: "Type" },
+  { title: "Vendor" },
+]}
       >
         {products.map((product, index) => (
           <IndexTable.Row
-            id={product.id.toString()}
+            id={String(product.id)}
             key={product.id}
             position={index}
             onClick={() => onSelect(product)}
           >
+            {/* Product */}
             <IndexTable.Cell>
-              <img
-              src={product.image}
-              alt={product.title}
-              width={50}
-             height={50}
-             />
-            </IndexTable.Cell>
-            <IndexTable.Cell>
-              {product.title.trim().length > 30 ? `${product.title.trim().substring(0,10)}...` : product.title.trim()}
+              <div className="flex items-center gap-3">
+                <img
+                  src={product.image}
+                  alt={product.title}
+                  width={50}
+                  height={50}
+                  className="rounded border"
+                />
+
+                <div>
+                  <p className="font-medium">
+                    {product.title.length > 30
+                      ? `${product.title.slice(0, 30)}...`
+                      : product.title}
+                  </p>
+                </div>
+              </div>
             </IndexTable.Cell>
 
+            {/* Status */}
             <IndexTable.Cell>
-              {product.status}
+              <span className="text-green-600 font-medium">
+                Active
+              </span>
             </IndexTable.Cell>
 
+            {/* Category */}
+            <IndexTable.Cell>
+              {product.category}
+            </IndexTable.Cell>
+
+            {/* Price */}
             <IndexTable.Cell>
               ${product.price}
             </IndexTable.Cell>
