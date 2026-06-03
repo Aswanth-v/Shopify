@@ -16,8 +16,8 @@ import {
 } from "@shopify/polaris";
 
 import type { Product } from "@/types/Product";
-import CategoryFilter from "@/FilterComponents/MoreFilterOptions";
-
+import CategoryFilter from "@/FilterComponents/Category";
+import {MoreFiltersSheet} from "@/FilterComponents/MoreFilter";
 interface Props {
   products: Product[];
   onSelect: (product: Product) => void;
@@ -30,7 +30,12 @@ const vendors = ["Company 123", "Rustic LTD", "partners-demo", "Boring Rock"];
 const getCategoryKey = (category: string) => {
   const c = category.toLowerCase();
 
-  if (c.includes("clothing") || c.includes("shirt") || c.includes("men") || c.includes("women")) {
+  if (
+    c.includes("clothing") ||
+    c.includes("shirt") ||
+    c.includes("men") ||
+    c.includes("women")
+  ) {
     return "clothes";
   }
 
@@ -49,7 +54,8 @@ export default function ProductTable({ products, onSelect }: Props) {
   const [search, setSearch] = useState("");
   const [moreActive, setMoreActive] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-
+const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
+const [moreFilterOpen, setMoreFilterOpen] = useState(false);
   const tabs = [
     { id: "all", content: "All" },
     { id: "active", content: "Active" },
@@ -78,30 +84,37 @@ export default function ProductTable({ products, onSelect }: Props) {
   }, [products]);
 
   /* ✅ FILTER LOGIC */
-  const filtered = useMemo(() => {
-    let data = formatted;
+const filtered = useMemo(() => {
+  let data = formatted;
 
-    // 🔍 SEARCH
-    if (search) {
-      data = data.filter((p) =>
-        p.title.toLowerCase().includes(search.toLowerCase()),
-      );
-    }
+  // SEARCH
+  if (search) {
+    data = data.filter((p) =>
+      p.title.toLowerCase().includes(search.toLowerCase()),
+    );
+  }
 
-    // 🧭 TABS
-    if (selectedTab === 1) data = data.filter((p) => p.status === "Active");
-    if (selectedTab === 2) data = data.filter((p) => p.status === "Draft");
-    if (selectedTab === 3) data = data.filter((p) => p.status === "Archived");
+  // TABS
+  if (selectedTab === 1) data = data.filter((p) => p.status === "Active");
+  if (selectedTab === 2) data = data.filter((p) => p.status === "Draft");
+  if (selectedTab === 3) data = data.filter((p) => p.status === "Archived");
 
-    // 🏷 CATEGORY FILTER (SAFE + WORKING)
-    if (selectedCategories?.length > 0) {
-      data = data.filter((p) =>
-        selectedCategories.includes(p.categoryKey),
-      );
-    }
+  // CATEGORY
+  if (selectedCategories?.length > 0) {
+    data = data.filter((p) =>
+      selectedCategories.includes(p.categoryKey),
+    );
+  }
 
-    return data;
-  }, [formatted, search, selectedTab, selectedCategories]);
+  // VENDORS (FIXED)
+  if (selectedVendors?.length > 0) {
+    data = data.filter((p) =>
+      selectedVendors.includes(p.vendor),
+    );
+  }
+
+  return data;
+}, [formatted, search, selectedTab, selectedCategories, selectedVendors]);
 
   return (
     <Page title="Products" primaryAction={<Button>Add product</Button>}>
@@ -115,9 +128,7 @@ export default function ProductTable({ products, onSelect }: Props) {
             <Popover
               active={moreActive}
               activator={
-                <Button onClick={() => setMoreActive(!moreActive)}>
-                  More
-                </Button>
+                <Button onClick={() => setMoreActive(!moreActive)}>More</Button>
               }
               onClose={() => setMoreActive(false)}
             >
@@ -151,6 +162,10 @@ export default function ProductTable({ products, onSelect }: Props) {
               selectedCategories={selectedCategories}
               setSelectedCategories={setSelectedCategories}
             />
+
+            <Button onClick={() => setMoreFilterOpen(true)}>
+              More Filters
+            </Button>
           </InlineStack>
         </Card>
 
@@ -217,6 +232,13 @@ export default function ProductTable({ products, onSelect }: Props) {
           </IndexTable>
         </Card>
       </BlockStack>
+       <MoreFiltersSheet
+        open={moreFilterOpen}
+        setOpen={setMoreFilterOpen}
+        vendors={vendors}
+        selectedVendors={selectedVendors}
+        setSelectedVendors={setSelectedVendors}
+      />
     </Page>
   );
 }
