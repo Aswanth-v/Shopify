@@ -27,14 +27,15 @@ export default function Page() {
     fetch("https://fakestoreapi.com/products")
       .then((res) => res.json())
       .then((data) => {
+        console.log("Fetched products:", data); 
         setProducts(data);
       })
       .catch((error) => console.error("Error fetching products:", error));
   }, []);
 
   return (
-    <PolarisPage fullWidth title="Product ">
-      <div className="flex justify-between items-center mb-3">
+    <PolarisPage >
+      {/* <div className="flex justify-between items-center mb-3">
         <ButtonGroup>
           <Button>Export</Button>
           <Button>Import</Button>
@@ -51,9 +52,7 @@ export default function Page() {
           </Popover>
           <Button variant="primary">Add Product</Button>
         </ButtonGroup>
-      </div>
-
-      
+      </div> */}
       <ProductTable
        products={products} 
       onSelect={setSelectedProduct} />

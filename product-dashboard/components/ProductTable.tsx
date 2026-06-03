@@ -1,9 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Card, IndexTable } from "@shopify/polaris";
+import {
+  Page,
+  Card,
+  Tabs,
+  IndexTable,
+  Badge,
+  Button,
+  Popover,
+  ActionList,
+  TextField,
+  BlockStack,
+  InlineStack,
+} from "@shopify/polaris";
+
 import type { Product } from "@/types/Product";
-import { ProductFilters, SearchFilters } from "../FilterComponents/Statusfilter";
 
 interface Props {
   products: Product[];
@@ -14,156 +26,170 @@ const statuses = ["Active", "Draft", "Archived"];
 const vendors = ["Company 123", "Rustic LTD", "partners-demo", "Boring Rock"];
 
 export default function ProductTable({ products, onSelect }: Props) {
-  const [selectedStatus, setSelectedStatus] = useState("All");
+  const [selectedTab, setSelectedTab] = useState(0);
   const [search, setSearch] = useState("");
+  const [moreActive, setMoreActive] = useState(false);
 
-  const formattedProducts = useMemo(
-    () =>
-      products.map((product) => ({
-        ...product,
-        status: statuses[Math.floor(Math.random() * statuses.length)],
-        inventory:
-          Math.random() > 0.2
-            ? Math.floor(Math.random() * 2000)
-            : "not tracked",
-        vendor: vendors[Math.floor(Math.random() * vendors.length)],
-      })),
-    [products]
-  );
+  const tabs = [
+    { id: "all", content: "All" },
+    { id: "active", content: "Active" },
+    { id: "draft", content: "Draft" },
+    { id: "archived", content: "Archived" },
+  ];
 
-  const filteredProducts = useMemo(() => {
-    let data = formattedProducts;
+  const moreOptions = [
+    { content: "Option A", onAction: () => console.log("A") },
+    { content: "Option B", onAction: () => console.log("B") },
+  ];
 
-    if (selectedStatus !== "All") {
-      data = data.filter((p) => p.status === selectedStatus);
-    }
+  const formatted = useMemo(() => {
+    return (products || []).map((p) => ({
+      ...p,
+      status: statuses[Math.floor(Math.random() * statuses.length)],
+      vendor: vendors[Math.floor(Math.random() * vendors.length)],
+      inventory:
+        Math.random() > 0.3
+          ? Math.floor(Math.random() * 2000)
+          : -Math.floor(Math.random() * 200),
+    }));
+  }, [products]);
 
-    if (search.trim()) {
+  const filtered = useMemo(() => {
+    let data = formatted;
+
+    if (search) {
       data = data.filter((p) =>
         p.title.toLowerCase().includes(search.toLowerCase())
       );
     }
 
+    if (selectedTab === 1) data = data.filter((p) => p.status === "Active");
+    if (selectedTab === 2) data = data.filter((p) => p.status === "Draft");
+    if (selectedTab === 3) data = data.filter((p) => p.status === "Archived");
+
     return data;
-  }, [formattedProducts, selectedStatus, search]);
+  }, [formatted, search, selectedTab]);
 
   return (
-    <Card>
-      <ProductFilters
-        selectedStatus={selectedStatus}
-        setSelectedStatus={setSelectedStatus}
-      />
-      <SearchFilters search={search} setSearch={setSearch} />
+    <Page
+      title="Products"
+      primaryAction={<Button variant="primary">Add product</Button>}
+    >
+      {/* 🧭 ACTION BAR (POLARIS SAFE) */}
+      <Card>
+        <InlineStack align="space-between" gap="300">
+          
+          <InlineStack gap="200">
+            <Button onClick={() => console.log("export")}>Export</Button>
+            <Button onClick={() => console.log("import")}>Import</Button>
 
-      <div className="hidden md:block">
-        <IndexTable
-          resourceName={{ singular: "product", plural: "products" }}
-          itemCount={filteredProducts.length}
-          selectable={false}
-          headings={[
-            { title: "" },
-            { title: "Product" },
-            { title: "Status" },
-            { title: "Inventory" },
-            { title: "Type" },
-            { title: "Vendor" },
-          ]}
-        >
-          {filteredProducts.map((product, index) => (
-            <IndexTable.Row
-              id={String(product.id)}
-              key={product.id}
-              position={index}
-              onClick={() => onSelect(product)}
+            <Popover
+              active={moreActive}
+              activator={
+                <Button onClick={() => setMoreActive(!moreActive)}>
+                  More
+                </Button>
+              }
+              onClose={() => setMoreActive(false)}
             >
-              <IndexTable.Cell>
-                <img
-                  src={product.image}
-                  alt={product.title}
-                  style={{
-                    width: 45,
-                    height: 45,
-                    objectFit: "cover",
-                    borderRadius: 6,
-                  }}
-                />
-              </IndexTable.Cell>
+              <ActionList items={moreOptions} />
+            </Popover>
+          </InlineStack>
 
-              <IndexTable.Cell>
-                <div className="font-medium">
-                  {product.title.length > 40
-                    ? `${product.title.slice(0, 10)}...`
-                    : product.title}
-                </div>
-              </IndexTable.Cell>
+        </InlineStack>
+      </Card>
 
-              <IndexTable.Cell>
-                <span
-                  className={`font-medium ${
-                    product.status === "Active"
-                      ? "text-green-600"
-                      : product.status === "Draft"
-                      ? "text-yellow-600"
-                      : "text-gray-600"
-                  }`}
-                >
-                  {product.status}
-                </span>
-              </IndexTable.Cell>
+      <BlockStack gap="400">
+        {/* 🟦 TABS */}
+        <Card>
+          <Tabs
+            tabs={tabs}
+            selected={selectedTab}
+            onSelect={setSelectedTab}
+          />
+        </Card>
 
-              <IndexTable.Cell>{product.inventory}</IndexTable.Cell>
-
-              <IndexTable.Cell>{product.category}</IndexTable.Cell>
-
-              <IndexTable.Cell>{product.vendor}</IndexTable.Cell>
-            </IndexTable.Row>
-          ))}
-        </IndexTable>
-      </div>
-
-      {/*  MOBILE CARD VIEW  */}
-      <div className="md:hidden space-y-3 mt-3">
-        {filteredProducts.map((product) => (
-          <div
-            key={product.id}
-            onClick={() => onSelect(product)}
-            className="flex items-center gap-3 p-3 border rounded-lg"
-          >
-            <img
-              src={product.image}
-              alt={product.title}
-              style={{
-                width: 50,
-                height: 50,
-                objectFit: "cover",
-                borderRadius: 6,
-              }}
+        {/* 🔍 SEARCH */}
+        <Card>
+          <InlineStack gap="300">
+            <TextField
+              labelHidden
+              label="Search"
+              placeholder="Filter items"
+              value={search}
+              onChange={setSearch}
+              autoComplete="off"
             />
+          </InlineStack>
+        </Card>
 
-            <div className="flex flex-col">
-              <div className="font-medium text-sm">
-                {product.title.length > 35
-                  ? `${product.title.slice(0, 15)}...`
-                  : product.title}
-              </div>
+        {/* 📊 TABLE */}
+        <Card>
+          <IndexTable
+            resourceName={{ singular: "product", plural: "products" }}
+            itemCount={filtered.length}
+            selectable={false}
+            headings={[
+              { title: "Product" },
+              { title: "Status" },
+              { title: "Inventory" },
+              { title: "Type" },
+              { title: "Vendor" },
+            ]}
+          >
+            {filtered.map((p, i) => (
+              <IndexTable.Row
+                id={String(p.id)}
+                key={p.id}
+                position={i}
+                onClick={() => onSelect(p)}
+              >
+                <IndexTable.Cell>
+                  <InlineStack gap="200">
+                    <img
+                      src={p.image}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        objectFit: "cover",
+                        borderRadius: 6,
+                      }}
+                    />
+                    {p.title.trim().substring(0, 15) + "..."}
+                  </InlineStack>
+                </IndexTable.Cell>
 
-              <div className="text-xs text-gray-500">
-                <span
-                  className={`font-medium ${
-                    product.status === "Active"
-                      ? "text-green-600"
-                      : product.status === "Draft"
-                      ? "text-yellow-600"
-                      : "text-gray-600"
-                  }`}
-                >
-                  {product.status}
-                </span> • {product.inventory} • {product.vendor}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </Card>
+                <IndexTable.Cell>
+                  <Badge
+                    tone={
+                      p.status === "Active"
+                        ? "success"
+                        : p.status === "Draft"
+                        ? "attention"
+                        : "info"
+                    }
+                  >
+                    {p.status}
+                  </Badge>
+                </IndexTable.Cell>
+
+                <IndexTable.Cell>
+                  <span
+                    style={{
+                      color: p.inventory < 0 ? "red" : "inherit",
+                    }}
+                  >
+                    {p.inventory}
+                  </span>
+                </IndexTable.Cell>
+
+                <IndexTable.Cell>{p.category}</IndexTable.Cell>
+                <IndexTable.Cell>{p.vendor}</IndexTable.Cell>
+              </IndexTable.Row>
+            ))}
+          </IndexTable>
+        </Card>
+      </BlockStack>
+    </Page>
   );
 }
