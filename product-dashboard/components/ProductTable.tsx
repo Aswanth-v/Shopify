@@ -16,6 +16,7 @@ import {
 } from "@shopify/polaris";
 
 import type { Product } from "@/types/Product";
+import CategoryFilter from "@/FilterComponents/MoreFilterOptions";
 
 interface Props {
   products: Product[];
@@ -25,10 +26,29 @@ interface Props {
 const statuses = ["Active", "Draft", "Archived"];
 const vendors = ["Company 123", "Rustic LTD", "partners-demo", "Boring Rock"];
 
+/* ✅ CATEGORY NORMALIZER */
+const getCategoryKey = (category: string) => {
+  const c = category.toLowerCase();
+
+  if (c.includes("clothing") || c.includes("shirt") || c.includes("men") || c.includes("women")) {
+    return "clothes";
+  }
+
+  if (c.includes("jewelery") || c.includes("accessory") || c.includes("bag")) {
+    return "accessories";
+  }
+
+  if (c.includes("electronic")) {
+    return "electronics";
+  }
+
+  return "clothes"; // fallback (optional)
+};
 export default function ProductTable({ products, onSelect }: Props) {
   const [selectedTab, setSelectedTab] = useState(0);
   const [search, setSearch] = useState("");
   const [moreActive, setMoreActive] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const tabs = [
     { id: "all", content: "All" },
@@ -42,6 +62,7 @@ export default function ProductTable({ products, onSelect }: Props) {
     { content: "Option B", onAction: () => console.log("B") },
   ];
 
+  /* ✅ NORMALIZED DATA */
   const formatted = useMemo(() => {
     return (products || []).map((p) => ({
       ...p,
@@ -51,34 +72,42 @@ export default function ProductTable({ products, onSelect }: Props) {
         Math.random() > 0.3
           ? Math.floor(Math.random() * 2000)
           : -Math.floor(Math.random() * 200),
+
+      categoryKey: getCategoryKey(p.category),
     }));
   }, [products]);
 
+  /* ✅ FILTER LOGIC */
   const filtered = useMemo(() => {
     let data = formatted;
 
+    // 🔍 SEARCH
     if (search) {
       data = data.filter((p) =>
-        p.title.toLowerCase().includes(search.toLowerCase())
+        p.title.toLowerCase().includes(search.toLowerCase()),
       );
     }
 
+    // 🧭 TABS
     if (selectedTab === 1) data = data.filter((p) => p.status === "Active");
     if (selectedTab === 2) data = data.filter((p) => p.status === "Draft");
     if (selectedTab === 3) data = data.filter((p) => p.status === "Archived");
 
+    // 🏷 CATEGORY FILTER (SAFE + WORKING)
+    if (selectedCategories?.length > 0) {
+      data = data.filter((p) =>
+        selectedCategories.includes(p.categoryKey),
+      );
+    }
+
     return data;
-  }, [formatted, search, selectedTab]);
+  }, [formatted, search, selectedTab, selectedCategories]);
 
   return (
-    <Page
-      title="Products"
-      primaryAction={<Button variant="primary">Add product</Button>}
-    >
-      {/* 🧭 ACTION BAR (POLARIS SAFE) */}
+    <Page title="Products" primaryAction={<Button>Add product</Button>}>
+      {/* ACTION BAR */}
       <Card>
         <InlineStack align="space-between" gap="300">
-          
           <InlineStack gap="200">
             <Button onClick={() => console.log("export")}>Export</Button>
             <Button onClick={() => console.log("import")}>Import</Button>
@@ -95,35 +124,37 @@ export default function ProductTable({ products, onSelect }: Props) {
               <ActionList items={moreOptions} />
             </Popover>
           </InlineStack>
-
         </InlineStack>
       </Card>
 
       <BlockStack gap="400">
-        {/* 🟦 TABS */}
+        {/* TABS */}
         <Card>
-          <Tabs
-            tabs={tabs}
-            selected={selectedTab}
-            onSelect={setSelectedTab}
-          />
+          <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab} />
         </Card>
 
-        {/* 🔍 SEARCH */}
+        {/* SEARCH + CATEGORY */}
         <Card>
-          <InlineStack gap="300">
-            <TextField
-              labelHidden
-              label="Search"
-              placeholder="Filter items"
-              value={search}
-              onChange={setSearch}
-              autoComplete="off"
+          <InlineStack align="space-between" gap="300">
+            <div style={{ flex: 1 }}>
+              <TextField
+                labelHidden
+                label="Search"
+                placeholder="Search products..."
+                value={search}
+                onChange={setSearch}
+                autoComplete="off"
+              />
+            </div>
+
+            <CategoryFilter
+              selectedCategories={selectedCategories}
+              setSelectedCategories={setSelectedCategories}
             />
           </InlineStack>
         </Card>
 
-        {/* 📊 TABLE */}
+        {/* TABLE */}
         <Card>
           <IndexTable
             resourceName={{ singular: "product", plural: "products" }}
@@ -165,8 +196,8 @@ export default function ProductTable({ products, onSelect }: Props) {
                       p.status === "Active"
                         ? "success"
                         : p.status === "Draft"
-                        ? "attention"
-                        : "info"
+                          ? "attention"
+                          : "info"
                     }
                   >
                     {p.status}
@@ -174,11 +205,7 @@ export default function ProductTable({ products, onSelect }: Props) {
                 </IndexTable.Cell>
 
                 <IndexTable.Cell>
-                  <span
-                    style={{
-                      color: p.inventory < 0 ? "red" : "inherit",
-                    }}
-                  >
+                  <span style={{ color: p.inventory < 0 ? "red" : "inherit" }}>
                     {p.inventory}
                   </span>
                 </IndexTable.Cell>
