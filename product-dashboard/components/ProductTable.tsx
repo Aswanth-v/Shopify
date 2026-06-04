@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import {
   Page,
   Card,
@@ -8,23 +8,19 @@ import {
   IndexTable,
   Badge,
   Button,
-  Popover,
-  ActionList,
   TextField,
   BlockStack,
   InlineStack,
   Text,
-  Avatar,
-  Divider,
   EmptyState,
-  Box,
   Icon,
 } from "@shopify/polaris";
 import { SearchIcon, FilterIcon } from "@shopify/polaris-icons";
-import type { Product } from "@/types/Product";
+import type { Product,FormattedProduct } from "@/types/Product";
 import CategoryFilter from "@/FilterComponents/Category";
 import { MoreFiltersSheet } from "@/FilterComponents/MoreFilter";
-import {exportToCsv} from "../utils/ExportsCvs";
+import { exportToCsv, importCsv } from "../utils/ExportsCvs";
+
 interface Props {
   products: Product[];
   onSelect: (product: Product) => void;
@@ -34,7 +30,7 @@ const statuses = ["Active", "Draft", "Archived"];
 const vendors = ["Company 123", "Rustic LTD", "partners-demo", "Boring Rock"];
 
 const getCategoryKey = (category: string) => {
-  const c = category.toLowerCase();
+  const c = (category || "").toLowerCase();
   if (
     c.includes("clothing") ||
     c.includes("shirt") ||
@@ -55,12 +51,13 @@ const statusTone = (status: string) => {
 };
 
 export default function ProductTable({ products, onSelect }: Props) {
+  const [importedProducts, setImportedProducts] = useState<Product[]>([]);
   const [selectedTab, setSelectedTab] = useState(0);
   const [search, setSearch] = useState("");
-  const [moreActive, setMoreActive] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   const [moreFilterOpen, setMoreFilterOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const tabs = [
     { id: "all", content: "All" },
@@ -74,22 +71,46 @@ export default function ProductTable({ products, onSelect }: Props) {
     { content: "Option B", onAction: () => console.log("B") },
   ];
 
-  const formatted = useMemo(() => {
-    return (products || []).map((p) => ({
+  // ✅ Merge prop products with imported products
+ const allProducts = useMemo(() => {
+  const maxId = products.length > 0 ? Math.max(...products.map((p) => Number(p.id))) : 0;
+
+  const reIndexed = importedProducts.map((p, i) => ({
+    ...p,
+    id: maxId + i + 1, // ✅ ensures imported IDs never clash with prop IDs
+  }));
+
+  return [...products, ...reIndexed];
+}, [products, importedProducts]);
+
+  // ✅ Coerce all values to correct types (CSV imports everything as strings)
+const formatted = useMemo((): FormattedProduct[] => {
+  return allProducts.map((p) => {
+    const id = Number(p.id) || 0;
+    return {
       ...p,
-      status: statuses[p.id % statuses.length],
-      vendor: vendors[p.id % vendors.length],
+      id,
+      price: Number(p.price) || 0,
+      rating: {
+        rate: Number(p.rating?.rate) || 0,
+        count: Number(p.rating?.count) || 0,
+      },
+      status: statuses[id % statuses.length],
+      vendor: vendors[id % vendors.length],
       inventory:
-        p.id % 3 === 0 ? -Math.floor(p.id * 7) : Math.floor(p.rating.count / 2),
-      categoryKey: getCategoryKey(p.category),
-    }));
-  }, [products]);
+        id % 3 === 0
+          ? -Math.floor(id * 7)
+          : Math.floor((Number(p.rating?.count) || 0) / 2),
+      categoryKey: getCategoryKey(p.category || ""),
+    };
+  });
+}, [allProducts]);
 
   const filtered = useMemo(() => {
     let data = formatted;
     if (search)
       data = data.filter((p) =>
-        p.title.toLowerCase().includes(search.toLowerCase()),
+        p.title.toLowerCase().includes(search.toLowerCase())
       );
     if (selectedTab === 1) data = data.filter((p) => p.status === "Active");
     if (selectedTab === 2) data = data.filter((p) => p.status === "Draft");
@@ -103,6 +124,22 @@ export default function ProductTable({ products, onSelect }: Props) {
 
   const activeFiltersCount = selectedCategories.length + selectedVendors.length;
 
+  const handleFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const data = importCsv(text);
+      setImportedProducts((prev) => [...prev, ...(data as Product[])]);
+    };
+    reader.readAsText(file);
+
+    // ✅ Reset input so the same file can be re-imported if needed
+    event.target.value = "";
+  };
+
   return (
     <Page
       title="Products"
@@ -113,8 +150,14 @@ export default function ProductTable({ products, onSelect }: Props) {
         </Button>
       }
       secondaryActions={[
-        { content: "Export", onAction: () => exportToCsv(filtered, "products") },
-        { content: "Import", onAction: () => console.log("import") },
+        {
+          content: "Export",
+          onAction: () => exportToCsv(filtered, "products"),
+        },
+        {
+          content: "Import",
+          onAction: () => fileInputRef.current?.click(),
+        },
       ]}
       actionGroups={[
         {
@@ -187,11 +230,11 @@ export default function ProductTable({ products, onSelect }: Props) {
             >
               {filtered.map((p, i) => (
                 <IndexTable.Row
-                  id={String(p.id)}
-                  key={p.id}
-                  position={i}
-                  onClick={() => onSelect(p)}
-                >
+  id={`product-${i}`}
+  key={`product-${i}`}
+  position={i}
+  onClick={() => onSelect(p)}
+>
                   <IndexTable.Cell>
                     <InlineStack gap="300" blockAlign="center">
                       <div
@@ -279,6 +322,14 @@ export default function ProductTable({ products, onSelect }: Props) {
         vendors={vendors}
         selectedVendors={selectedVendors}
         setSelectedVendors={setSelectedVendors}
+      />
+
+      <input
+        type="file"
+        accept=".csv"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        onChange={handleFile}
       />
     </Page>
   );

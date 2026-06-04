@@ -1,11 +1,3 @@
-// export interface Product {
-//   id: number;
-//   title: string;
-//   price: number;
-//   description: string;
-//   category: string;
-//   image: string;
-// }
 export interface Product {
   id: number
   title: string
@@ -17,6 +9,14 @@ export interface Product {
     rate: number
     count: number
   }
+}
+
+// ✅ Add this
+export interface FormattedProduct extends Product {
+  status: string
+  vendor: string
+  inventory: number
+  categoryKey: string
 }
 
 export interface AnalyticsEvent {
