@@ -81,14 +81,11 @@ export function MoreFiltersSheet({
           >
             <span>
               Vendors{" "}
-              {selectedVendors.length > 0
-                ? `(${selectedVendors.length})`
-                : ""}
+              {selectedVendors.length > 0 ? `(${selectedVendors.length})` : ""}
             </span>
             <span>{vendorOpen ? "▲" : "▼"}</span>
           </button>
-
-          {/* 🔥 SMOOTH DROPDOWN ANIMATION */}
+          
           <div
             style={{
               maxHeight: vendorOpen ? 200 : 0,

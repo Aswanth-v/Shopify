@@ -24,7 +24,7 @@ import { SearchIcon, FilterIcon } from "@shopify/polaris-icons";
 import type { Product } from "@/types/Product";
 import CategoryFilter from "@/FilterComponents/Category";
 import { MoreFiltersSheet } from "@/FilterComponents/MoreFilter";
-
+import {exportToCsv} from "../utils/ExportsCvs";
 interface Props {
   products: Product[];
   onSelect: (product: Product) => void;
@@ -35,8 +35,15 @@ const vendors = ["Company 123", "Rustic LTD", "partners-demo", "Boring Rock"];
 
 const getCategoryKey = (category: string) => {
   const c = category.toLowerCase();
-  if (c.includes("clothing") || c.includes("shirt") || c.includes("men") || c.includes("women")) return "clothes";
-  if (c.includes("jewelery") || c.includes("accessory") || c.includes("bag")) return "accessories";
+  if (
+    c.includes("clothing") ||
+    c.includes("shirt") ||
+    c.includes("men") ||
+    c.includes("women")
+  )
+    return "clothes";
+  if (c.includes("jewelery") || c.includes("accessory") || c.includes("bag"))
+    return "accessories";
   if (c.includes("electronic")) return "electronics";
   return "clothes";
 };
@@ -72,19 +79,25 @@ export default function ProductTable({ products, onSelect }: Props) {
       ...p,
       status: statuses[p.id % statuses.length],
       vendor: vendors[p.id % vendors.length],
-      inventory: p.id % 3 === 0 ? -Math.floor(p.id * 7) : Math.floor(p.rating.count / 2),
+      inventory:
+        p.id % 3 === 0 ? -Math.floor(p.id * 7) : Math.floor(p.rating.count / 2),
       categoryKey: getCategoryKey(p.category),
     }));
   }, [products]);
 
   const filtered = useMemo(() => {
     let data = formatted;
-    if (search) data = data.filter((p) => p.title.toLowerCase().includes(search.toLowerCase()));
+    if (search)
+      data = data.filter((p) =>
+        p.title.toLowerCase().includes(search.toLowerCase()),
+      );
     if (selectedTab === 1) data = data.filter((p) => p.status === "Active");
     if (selectedTab === 2) data = data.filter((p) => p.status === "Draft");
     if (selectedTab === 3) data = data.filter((p) => p.status === "Archived");
-    if (selectedCategories.length > 0) data = data.filter((p) => selectedCategories.includes(p.categoryKey));
-    if (selectedVendors.length > 0) data = data.filter((p) => selectedVendors.includes(p.vendor));
+    if (selectedCategories.length > 0)
+      data = data.filter((p) => selectedCategories.includes(p.categoryKey));
+    if (selectedVendors.length > 0)
+      data = data.filter((p) => selectedVendors.includes(p.vendor));
     return data;
   }, [formatted, search, selectedTab, selectedCategories, selectedVendors]);
 
@@ -100,7 +113,7 @@ export default function ProductTable({ products, onSelect }: Props) {
         </Button>
       }
       secondaryActions={[
-        { content: "Export", onAction: () => console.log("export") },
+        { content: "Export", onAction: () => exportToCsv(filtered, "products") },
         { content: "Import", onAction: () => console.log("import") },
       ]}
       actionGroups={[
@@ -111,7 +124,6 @@ export default function ProductTable({ products, onSelect }: Props) {
       ]}
     >
       <BlockStack gap="400">
-
         {/* TABS */}
         <Card padding="0">
           <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab} />
@@ -140,11 +152,9 @@ export default function ProductTable({ products, onSelect }: Props) {
                   setSelectedCategories={setSelectedCategories}
                 />
               </div>
-              <Button
-                onClick={() => setMoreFilterOpen(true)}
-                icon={FilterIcon}
-              >
-                Filters {activeFiltersCount > 0 ? `(${activeFiltersCount})` : ""}
+              <Button onClick={() => setMoreFilterOpen(true)} icon={FilterIcon}>
+                Filters{" "}
+                {activeFiltersCount > 0 ? `(${activeFiltersCount})` : ""}
               </Button>
             </InlineStack>
           </InlineStack>
@@ -157,7 +167,9 @@ export default function ProductTable({ products, onSelect }: Props) {
               heading="No products found"
               image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
             >
-              <Text as="p" tone="subdued">Try adjusting your search or filters.</Text>
+              <Text as="p" tone="subdued">
+                Try adjusting your search or filters.
+              </Text>
             </EmptyState>
           ) : (
             <IndexTable
@@ -182,23 +194,32 @@ export default function ProductTable({ products, onSelect }: Props) {
                 >
                   <IndexTable.Cell>
                     <InlineStack gap="300" blockAlign="center">
-                      <div style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 8,
-                        overflow: "hidden",
-                        border: "1px solid #e1e3e5",
-                        flexShrink: 0,
-                      }}>
+                      <div
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 8,
+                          overflow: "hidden",
+                          border: "1px solid #e1e3e5",
+                          flexShrink: 0,
+                        }}
+                      >
                         <img
                           src={p.image}
                           alt={p.title}
-                          style={{ width: "100%", height: "100%", objectFit: "contain", padding: 4 }}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "contain",
+                            padding: 4,
+                          }}
                         />
                       </div>
                       <BlockStack gap="050">
                         <Text as="span" variant="bodySm" fontWeight="semibold">
-                          {p.title.length > 30 ? p.title.substring(0, 30) + "…" : p.title}
+                          {p.title.length > 30
+                            ? p.title.substring(0, 30) + "…"
+                            : p.title}
                         </Text>
                         <Text as="span" variant="bodySm" tone="subdued">
                           ⭐ {p.rating.rate} ({p.rating.count})
@@ -215,10 +236,18 @@ export default function ProductTable({ products, onSelect }: Props) {
                     <Text
                       as="span"
                       variant="bodySm"
-                      tone={p.inventory < 0 ? "critical" : p.inventory < 10 ? "caution" : "success"}
+                      tone={
+                        p.inventory < 0
+                          ? "critical"
+                          : p.inventory < 10
+                            ? "caution"
+                            : "success"
+                      }
                       fontWeight={p.inventory < 0 ? "semibold" : "regular"}
                     >
-                      {p.inventory < 0 ? `${p.inventory} oversold` : `${p.inventory} in stock`}
+                      {p.inventory < 0
+                        ? `${p.inventory} oversold`
+                        : `${p.inventory} in stock`}
                     </Text>
                   </IndexTable.Cell>
 
@@ -227,7 +256,9 @@ export default function ProductTable({ products, onSelect }: Props) {
                   </IndexTable.Cell>
 
                   <IndexTable.Cell>
-                    <Text as="span" variant="bodySm" tone="subdued">{p.vendor}</Text>
+                    <Text as="span" variant="bodySm" tone="subdued">
+                      {p.vendor}
+                    </Text>
                   </IndexTable.Cell>
 
                   <IndexTable.Cell>
@@ -240,7 +271,6 @@ export default function ProductTable({ products, onSelect }: Props) {
             </IndexTable>
           )}
         </Card>
-
       </BlockStack>
 
       <MoreFiltersSheet

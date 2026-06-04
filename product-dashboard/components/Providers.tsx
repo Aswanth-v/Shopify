@@ -22,11 +22,7 @@ export function useAuth() {
   return ctx;
 }
 
-export default function Providers({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function Providers({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   const signIn = (u: User) => setUser(u);
