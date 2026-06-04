@@ -16,10 +16,11 @@ import {
   Icon,
 } from "@shopify/polaris";
 import { SearchIcon, FilterIcon } from "@shopify/polaris-icons";
-import type { Product,FormattedProduct } from "@/types/Product";
+import type { Product, FormattedProduct } from "@/types/Product";
 import CategoryFilter from "@/FilterComponents/Category";
 import { MoreFiltersSheet } from "@/FilterComponents/MoreFilter";
 import { exportToCsv, importCsv } from "../utils/ExportsCvs";
+import AddProductModal from "../components/AddProduct"; // ✅ new import
 
 interface Props {
   products: Product[];
@@ -52,6 +53,8 @@ const statusTone = (status: string) => {
 
 export default function ProductTable({ products, onSelect }: Props) {
   const [importedProducts, setImportedProducts] = useState<Product[]>([]);
+  const [manualProducts, setManualProducts] = useState<Product[]>([]); // ✅ new
+  const [addModalOpen, setAddModalOpen] = useState(false);             // ✅ new
   const [selectedTab, setSelectedTab] = useState(0);
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -71,40 +74,43 @@ export default function ProductTable({ products, onSelect }: Props) {
     { content: "Option B", onAction: () => console.log("B") },
   ];
 
-  // ✅ Merge prop products with imported products
- const allProducts = useMemo(() => {
-  const maxId = products.length > 0 ? Math.max(...products.map((p) => Number(p.id))) : 0;
+  // ✅ Merge all 3 sources: API + imported CSV + manually added
+  const allProducts = useMemo(() => {
+    const maxId =
+      products.length > 0
+        ? Math.max(...products.map((p) => Number(p.id)))
+        : 0;
 
-  const reIndexed = importedProducts.map((p, i) => ({
-    ...p,
-    id: maxId + i + 1, // ✅ ensures imported IDs never clash with prop IDs
-  }));
-
-  return [...products, ...reIndexed];
-}, [products, importedProducts]);
-
-  // ✅ Coerce all values to correct types (CSV imports everything as strings)
-const formatted = useMemo((): FormattedProduct[] => {
-  return allProducts.map((p) => {
-    const id = Number(p.id) || 0;
-    return {
+    const reIndexedImports = importedProducts.map((p, i) => ({
       ...p,
-      id,
-      price: Number(p.price) || 0,
-      rating: {
-        rate: Number(p.rating?.rate) || 0,
-        count: Number(p.rating?.count) || 0,
-      },
-      status: statuses[id % statuses.length],
-      vendor: vendors[id % vendors.length],
-      inventory:
-        id % 3 === 0
-          ? -Math.floor(id * 7)
-          : Math.floor((Number(p.rating?.count) || 0) / 2),
-      categoryKey: getCategoryKey(p.category || ""),
-    };
-  });
-}, [allProducts]);
+      id: maxId + i + 1,
+    }));
+
+    // manualProducts already have unique IDs generated inside the modal
+    return [...products, ...reIndexedImports, ...manualProducts];
+  }, [products, importedProducts, manualProducts]);
+
+  const formatted = useMemo((): FormattedProduct[] => {
+    return allProducts.map((p) => {
+      const id = Number(p.id) || 0;
+      return {
+        ...p,
+        id,
+        price: Number(p.price) || 0,
+        rating: {
+          rate: Number(p.rating?.rate) || 0,
+          count: Number(p.rating?.count) || 0,
+        },
+        status: statuses[id % statuses.length],
+        vendor: vendors[id % vendors.length],
+        inventory:
+          id % 3 === 0
+            ? -Math.floor(id * 7)
+            : Math.floor((Number(p.rating?.count) || 0) / 2),
+        categoryKey: getCategoryKey(p.category || ""),
+      };
+    });
+  }, [allProducts]);
 
   const filtered = useMemo(() => {
     let data = formatted;
@@ -124,6 +130,11 @@ const formatted = useMemo((): FormattedProduct[] => {
 
   const activeFiltersCount = selectedCategories.length + selectedVendors.length;
 
+  // ✅ Called by modal when user submits the form
+  const handleAddProduct = (product: Product) => {
+    setManualProducts((prev) => [...prev, product]);
+  };
+
   const handleFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -135,8 +146,6 @@ const formatted = useMemo((): FormattedProduct[] => {
       setImportedProducts((prev) => [...prev, ...(data as Product[])]);
     };
     reader.readAsText(file);
-
-    // ✅ Reset input so the same file can be re-imported if needed
     event.target.value = "";
   };
 
@@ -145,7 +154,12 @@ const formatted = useMemo((): FormattedProduct[] => {
       title="Products"
       subtitle={`${filtered.length} products`}
       primaryAction={
-        <Button variant="primary" tone="success">
+        // ✅ Now opens the modal instead of doing nothing
+        <Button
+          variant="primary"
+          tone="success"
+          onClick={() => setAddModalOpen(true)}
+        >
           Add product
         </Button>
       }
@@ -230,11 +244,11 @@ const formatted = useMemo((): FormattedProduct[] => {
             >
               {filtered.map((p, i) => (
                 <IndexTable.Row
-  id={`product-${i}`}
-  key={`product-${i}`}
-  position={i}
-  onClick={() => onSelect(p)}
->
+                  id={`product-${i}`}
+                  key={`product-${i}`}
+                  position={i}
+                  onClick={() => onSelect(p)}
+                >
                   <IndexTable.Cell>
                     <InlineStack gap="300" blockAlign="center">
                       <div
@@ -322,6 +336,14 @@ const formatted = useMemo((): FormattedProduct[] => {
         vendors={vendors}
         selectedVendors={selectedVendors}
         setSelectedVendors={setSelectedVendors}
+      />
+
+      {/* ✅ Add Product Modal */}
+      <AddProductModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onAdd={handleAddProduct}
+        existingIds={allProducts.map((p) => p.id)}
       />
 
       <input
