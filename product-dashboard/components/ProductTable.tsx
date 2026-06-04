@@ -275,7 +275,7 @@ export default function ProductTable({ products, onSelect }: Props) {
                       <BlockStack gap="050">
                         <Text as="span" variant="bodySm" fontWeight="semibold">
                           {p.title.length > 30
-                            ? p.title.substring(0, 30) + "…"
+                            ? p.title.substring(0,15) + "…"
                             : p.title}
                         </Text>
                         <Text as="span" variant="bodySm" tone="subdued">
