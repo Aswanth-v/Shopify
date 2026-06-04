@@ -1,7 +1,6 @@
 import papa from "papaparse";
 
 export function exportToCsv(data: any[], filename: string) {
-  // Flatten nested objects so they round-trip cleanly
   const flattened = data.map(({ rating, ...rest }) => ({
     ...rest,
     "rating.rate": rating?.rate ?? 0,
@@ -14,21 +13,21 @@ export function exportToCsv(data: any[], filename: string) {
 
   const link = document.createElement("a");
   link.href = url;
-  link.setAttribute("download", `${filename}.csv`); // ✅ uses the filename param
+  link.setAttribute("download", `${filename}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url); // ✅ cleanup memory leak
+  URL.revokeObjectURL(url); 
 }
 
 export function importCsv(csvText: string) {
   const result = papa.parse(csvText, {
     header: true,
     skipEmptyLines: true,
-    dynamicTyping: true, // ✅ auto-converts numbers/booleans
+    dynamicTyping: true, 
   });
 
-  // Re-hydrate nested rating object if it was flattened on export
+
   return result.data.map((row: any) => ({
     ...row,
     id: Number(row.id),
