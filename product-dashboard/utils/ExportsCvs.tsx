@@ -1,15 +1,41 @@
 import papa from "papaparse";
 
 export function exportToCsv(data: any[], filename: string) {
-  const csv = papa.unparse(data);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });   
- 
-const url = URL.createObjectURL(blob);
+  // Flatten nested objects so they round-trip cleanly
+  const flattened = data.map(({ rating, ...rest }) => ({
+    ...rest,
+    "rating.rate": rating?.rate ?? 0,
+    "rating.count": rating?.count ?? 0,
+  }));
 
-const link = document.createElement("a");
+  const csv = papa.unparse(flattened);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
   link.href = url;
-  link.setAttribute("download", "products.csv");
+  link.setAttribute("download", `${filename}.csv`); // ✅ uses the filename param
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url); // ✅ cleanup memory leak
+}
+
+export function importCsv(csvText: string) {
+  const result = papa.parse(csvText, {
+    header: true,
+    skipEmptyLines: true,
+    dynamicTyping: true, // ✅ auto-converts numbers/booleans
+  });
+
+  // Re-hydrate nested rating object if it was flattened on export
+  return result.data.map((row: any) => ({
+    ...row,
+    id: Number(row.id),
+    price: Number(row.price),
+    rating: {
+      rate: Number(row["rating.rate"] ?? row.rating?.rate ?? 0),
+      count: Number(row["rating.count"] ?? row.rating?.count ?? 0),
+    },
+  }));
 }
